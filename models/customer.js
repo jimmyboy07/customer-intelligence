@@ -1,20 +1,38 @@
-const db = require('../db');
+const supabase = require('../services/supabase');
 
-function createCustomer({ name, email, notes }) {
-  const stmt = db.prepare('INSERT INTO customers (name, email, notes) VALUES (?,?,?)');
-  const info = stmt.run(name, email, notes);
-  return getCustomerById(info.lastInsertRowid);
+async function createCustomer({ name, email, notes }) {
+  // Insert and return the created row (expects a `customers` table in Supabase)
+  const { data, error } = await supabase
+    .from('customers')
+    .insert([{ name, email, notes }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
-function getCustomerById(id) {
-  const stmt = db.prepare('SELECT * FROM customers WHERE id = ?');
-  return stmt.get(id);
+async function getCustomerById(id) {
+  const { data, error } = await supabase
+    .from('customers')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) return null;
+  return data;
 }
 
-function updateSummary(id, summary) {
-  const stmt = db.prepare('UPDATE customers SET summary = ? WHERE id = ?');
-  stmt.run(summary, id);
-  return getCustomerById(id);
+async function updateSummary(id, summary) {
+  const { data, error } = await supabase
+    .from('customers')
+    .update({ summary })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
 module.exports = { createCustomer, getCustomerById, updateSummary };
